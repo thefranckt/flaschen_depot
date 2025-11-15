@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # ML Training Service
+  ml-training:
+    build: .
+    container_name: flaschendepot-training
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./mlruns:/app/mlruns
+    environment:
+      - MLFLOW_TRACKING_URI=./mlruns
+      - PYTHONUNBUFFERED=1
+    command: python src/models/train_model.py
+
+  # MLflow Tracking Server
+  mlflow-server:
+    image: python:3.9-slim
+    container_name: mlflow-server
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./mlruns:/mlruns
+    command: >
+      sh -c "pip install mlflow &&
+             mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri /mlruns"
+
+  # API Service (optional)
+  api:
+    build: .
+    container_name: flaschendepot-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/app/models
+      - ./configs:/app/configs
+    environment:
+      - MODEL_PATH=/app/models
+    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000
+    depends_on:
+      - ml-training

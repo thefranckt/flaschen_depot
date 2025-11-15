@@ -1,0 +1,96 @@
+# Projekt Konfiguration
+project:
+  name: flaschendepot_delivery_service
+  version: 0.2.0
+  author: Franz
+  description: Service-Time-Vorhersage für Getränkelieferservice
+
+# Daten Konfiguration
+data:
+  raw_data_path: data/raw
+  processed_data_path: data/processed
+  external_data_path: data/external
+  test_size: 0.2
+  validation_size: 0.1
+  random_state: 42
+  
+  # Parquet-Dateien
+  parquet_files:
+    - articles.parquet          # 15.6M Zeilen - Artikel mit Gewichten
+    - orders.parquet            # 1.5M Zeilen - Bestellungen
+    - driver_order_mapping.parquet  # 1.5M Zeilen - Fahrer-Zuordnung
+    - service_times.parquet     # 1.5M Zeilen - Service-Zeiten (Target)
+
+# Feature Engineering
+features:
+  # Kategorische Features
+  categorical_features:
+    - warehouse_id
+    - has_elevator
+    - is_pre_order
+    - is_business
+  
+  # Numerische Features
+  numerical_features:
+    - floor
+    - num_articles
+    - total_weight_g
+    - avg_article_weight_g
+    - max_article_weight_g
+  
+  # Zeitliche Features (werden aus Timestamps erstellt)
+  temporal_features:
+    - hour_of_day
+    - day_of_week
+    - is_weekend
+    - month
+  
+  # Zielvariable (Regression!)
+  target_variable: service_time_in_minutes
+
+# Model Konfiguration (Regression statt Classification!)
+model:
+  algorithm: random_forest_regressor
+  hyperparameters:
+    n_estimators: 100
+    max_depth: 15
+    min_samples_split: 10
+    min_samples_leaf: 5
+    random_state: 42
+  
+  alternatives:
+    gradient_boosting:
+      n_estimators: 100
+      learning_rate: 0.1
+      max_depth: 8
+    
+    xgboost:
+      n_estimators: 100
+      learning_rate: 0.1
+      max_depth: 6
+      objective: 'reg:squarederror'
+    
+    lightgbm:
+      num_leaves: 31
+      learning_rate: 0.1
+      n_estimators: 100
+      objective: 'regression'
+
+# Training Konfiguration
+training:
+  cross_validation: 5
+  scoring_metric: neg_mean_squared_error
+  save_model: true
+  model_path: models/
+
+# MLflow Tracking
+mlflow:
+  experiment_name: flaschendepot_service_time_prediction
+  tracking_uri: ./mlruns
+  artifact_location: ./mlartifacts
+
+# Logging
+logging:
+  level: INFO
+  format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+  file: logs/app.log
