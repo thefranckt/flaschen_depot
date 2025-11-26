@@ -780,8 +780,8 @@ Dieses Projekt wurde für die Flaschenpost SE Bewerbung erstellt.
 ## 👤 Autor
 
 **Ihr Name**
-- GitHub: [@username]
-- Email: your.email@example.com
+- GitHub: [thefranckt]
+- Email: derfrancko@gmail.com
 
 ---
 
