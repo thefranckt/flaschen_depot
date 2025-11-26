@@ -1,6 +1,6 @@
 """
-Data Loading Module
-Loads and validates parquet files for the service time prediction project.
+Daten-Lade-Modul
+Lädt und validiert Parquet-Dateien für das Service-Zeit-Vorhersage-Projekt.
 """
 
 import pandas as pd
@@ -12,79 +12,79 @@ logger = logging.getLogger(__name__)
 
 
 class DataLoader:
-    """Handles loading and initial validation of raw data files."""
+    """Behandelt das Laden und die initiale Validierung von Rohdaten-Dateien."""
     
     def __init__(self, data_dir: str = "data/raw"):
         """
-        Initialize DataLoader with data directory.
+        DataLoader mit Datenverzeichnis initialisieren.
         
         Args:
-            data_dir: Path to directory containing raw parquet files
+            data_dir: Pfad zum Verzeichnis mit rohen Parquet-Dateien
         """
         self.data_dir = Path(data_dir)
         
     def load_orders(self) -> pd.DataFrame:
         """
-        Load orders data.
+        Bestellungen laden.
         
         Returns:
-            DataFrame with columns: warehouse_id, order_time, has_elevator, 
+            DataFrame mit Spalten: warehouse_id, order_time, has_elevator, 
             floor, is_business, web_order_id, customer_id
         """
         filepath = self.data_dir / "orders.parquet"
-        logger.info(f"Loading orders from {filepath}")
+        logger.info("Loading orders from %s", filepath)
         df = pd.read_parquet(filepath)
-        logger.info(f"Loaded {len(df)} orders")
+        logger.info("Loaded %d orders", len(df))
         return df
     
     def load_articles(self) -> pd.DataFrame:
         """
-        Load articles data.
+        Artikel laden.
         
         Returns:
-            DataFrame with columns: warehouse_id, box_id, article_id, 
+            DataFrame mit Spalten: warehouse_id, box_id, article_id, 
             article_weight_in_g, web_order_id
         """
         filepath = self.data_dir / "articles.parquet"
-        logger.info(f"Loading articles from {filepath}")
+        logger.info("Loading articles from %s", filepath)
         df = pd.read_parquet(filepath)
-        logger.info(f"Loaded {len(df)} articles")
+        logger.info("Loaded %d articles", len(df))
         return df
     
     def load_service_times(self) -> pd.DataFrame:
         """
-        Load service times data.
+        Service-Zeiten laden.
         
         Returns:
-            DataFrame with columns: service_time_start, service_time_end, 
+            DataFrame mit Spalten: service_time_start, service_time_end, 
             service_time_in_minutes, order_datetime, web_order_id, driver_id, 
             trip_id, customer_id
         """
         filepath = self.data_dir / "service_times.parquet"
-        logger.info(f"Loading service times from {filepath}")
+        logger.info("Loading service times from %s", filepath)
         df = pd.read_parquet(filepath)
-        logger.info(f"Loaded {len(df)} service time records")
+        logger.info("Loaded %d service time records", len(df))
         return df
     
     def load_driver_mapping(self) -> pd.DataFrame:
         """
-        Load driver order mapping data.
+        Fahrer-Bestellungs-Zuordnung laden.
         
         Returns:
-            DataFrame with columns: driver_id, web_order_id
+            DataFrame mit Spalten: driver_id, web_order_id
         """
         filepath = self.data_dir / "driver_order_mapping.parquet"
-        logger.info(f"Loading driver mapping from {filepath}")
+        logger.info("Loading driver mapping from %s", filepath)
         df = pd.read_parquet(filepath)
-        logger.info(f"Loaded {len(df)} driver-order mappings")
+        logger.info("Loaded %d driver-order mappings", len(df))
         return df
     
     def load_all(self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """
-        Load all data files.
+        Alle Datendateien laden.
         
         Returns:
-            Tuple of (orders, articles, service_times, driver_mapping) DataFrames
+            Tuple von (orders, articles, service_times, driver_mapping) DataFrames
         """
         logger.info("Loading all data files...")
         orders = self.load_orders()
@@ -96,14 +96,14 @@ class DataLoader:
     
     def get_data_summary(self) -> Dict[str, Dict]:
         """
-        Get summary statistics for all datasets.
+        Zusammenfassungs-Statistiken für alle Datensätze abrufen.
         
         Returns:
-            Dictionary with summary info for each dataset
+            Dictionary mit Zusammenfassungs-Info für jeden Datensatz
         """
         orders, articles, service_times, driver_mapping = self.load_all()
         
-        summary = {
+        data_summary = {
             "orders": {
                 "rows": len(orders),
                 "columns": list(orders.columns),
@@ -126,7 +126,7 @@ class DataLoader:
             }
         }
         
-        return summary
+        return data_summary
 
 
 if __name__ == "__main__":

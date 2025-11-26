@@ -7,7 +7,6 @@ import pandas as pd
 import numpy as np
 import logging
 from typing import Tuple, List
-from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -47,33 +46,33 @@ class FeatureEngineer:
         logger.info("Starting dataset join...")
         
         # Start with service_times as it contains the target variable
-        df = service_times.copy()
-        logger.info(f"Starting with service_times: {len(df)} rows")
+        df_merged = service_times.copy()
+        logger.info("Starting with service_times: %d rows", len(df_merged))
         
         # Join with orders on web_order_id
-        df = df.merge(orders, on='web_order_id', how='left', suffixes=('', '_order'))
-        logger.info(f"After joining orders: {len(df)} rows")
+        df_merged = df_merged.merge(orders, on='web_order_id', how='left', suffixes=('', '_order'))
+        logger.info("After joining orders: %d rows", len(df_merged))
         
         # Aggregate articles data by web_order_id
         articles_agg = self._aggregate_articles(articles)
-        df = df.merge(articles_agg, on='web_order_id', how='left')
-        logger.info(f"After joining articles: {len(df)} rows")
+        df_merged = df_merged.merge(articles_agg, on='web_order_id', how='left')
+        logger.info("After joining articles: %d rows", len(df_merged))
         
         # Driver mapping is already included via driver_id in service_times
         # But we can verify the mapping
-        df = df.merge(
+        df_merged = df_merged.merge(
             driver_mapping[['driver_id', 'web_order_id']],
             on=['driver_id', 'web_order_id'],
             how='left',
             indicator=True
         )
-        logger.info(f"Driver mapping verification complete")
+        logger.info("Driver mapping verification complete")
         
         # Remove the merge indicator
-        df = df.drop('_merge', axis=1)
+        df_merged = df_merged.drop('_merge', axis=1)
         
-        logger.info(f"Final merged dataset: {len(df)} rows, {len(df.columns)} columns")
-        return df
+        logger.info("Final merged dataset: %d rows, %d columns", len(df_merged), len(df_merged.columns))
+        return df_merged
     
     def _aggregate_articles(self, articles: pd.DataFrame) -> pd.DataFrame:
         """
@@ -106,7 +105,7 @@ class FeatureEngineer:
             'min_article_weight_g'
         ]
         
-        logger.info(f"Aggregated to {len(articles_agg)} orders")
+        logger.info("Aggregated to %d orders", len(articles_agg))
         return articles_agg
     
     def clean_data(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -123,25 +122,25 @@ class FeatureEngineer:
         initial_rows = len(df)
         
         # Remove rows with missing target variable
-        df = df.dropna(subset=['service_time_in_minutes'])
-        logger.info(f"Removed {initial_rows - len(df)} rows with missing target")
+        df_clean = df.dropna(subset=['service_time_in_minutes'])
+        logger.info("Removed %d rows with missing target", initial_rows - len(df_clean))
         
         # Remove negative or zero service times
-        df = df[df['service_time_in_minutes'] > 0]
-        logger.info(f"Removed rows with non-positive service times")
+        df_clean = df_clean[df_clean['service_time_in_minutes'] > 0]
+        logger.info("Removed rows with non-positive service times")
         
         # Handle missing values in key features
         # Floor: fill with 0 (ground floor)
-        if 'floor' in df.columns:
-            df['floor'] = df['floor'].fillna(0)
+        if 'floor' in df_clean.columns:
+            df_clean['floor'] = df_clean['floor'].fillna(0)
         
         # has_elevator: fill with False
-        if 'has_elevator' in df.columns:
-            df['has_elevator'] = df['has_elevator'].fillna(False)
+        if 'has_elevator' in df_clean.columns:
+            df_clean['has_elevator'] = df_clean['has_elevator'].fillna(False)
         
         # is_business: fill with False
-        if 'is_business' in df.columns:
-            df['is_business'] = df['is_business'].fillna(False)
+        if 'is_business' in df_clean.columns:
+            df_clean['is_business'] = df_clean['is_business'].fillna(False)
         
         # Fill missing article aggregations with 0
         article_cols = [
@@ -149,14 +148,14 @@ class FeatureEngineer:
             'avg_article_weight_g', 'max_article_weight_g', 'min_article_weight_g'
         ]
         for col in article_cols:
-            if col in df.columns:
-                df[col] = df[col].fillna(0)
+            if col in df_clean.columns:
+                df_clean[col] = df_clean[col].fillna(0)
         
         # Remove outliers using IQR method on target variable
-        df = self._remove_outliers(df, 'service_time_in_minutes')
+        df_clean = self._remove_outliers(df_clean, 'service_time_in_minutes')
         
-        logger.info(f"Data cleaning complete. Rows: {len(df)}")
-        return df
+        logger.info("Data cleaning complete. Rows: %d", len(df_clean))
+        return df_clean
     
     def _remove_outliers(self, df: pd.DataFrame, column: str, iqr_multiplier: float = 1.5) -> pd.DataFrame:
         """
@@ -178,11 +177,11 @@ class FeatureEngineer:
         upper_bound = Q3 + iqr_multiplier * IQR
         
         initial_rows = len(df)
-        df = df[(df[column] >= lower_bound) & (df[column] <= upper_bound)]
-        removed = initial_rows - len(df)
+        df_filtered = df[(df[column] >= lower_bound) & (df[column] <= upper_bound)]
+        removed = initial_rows - len(df_filtered)
         
-        logger.info(f"Removed {removed} outliers from {column} (bounds: {lower_bound:.2f} - {upper_bound:.2f})")
-        return df
+        logger.info("Removed %d outliers from %s (bounds: %.2f - %.2f)", removed, column, lower_bound, upper_bound)
+        return df_filtered
     
     def create_features(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -223,7 +222,7 @@ class FeatureEngineer:
             if col in df.columns:
                 df[col] = df[col].astype(int)
         
-        logger.info(f"Feature engineering complete. Total features: {len(df.columns)}")
+        logger.info("Feature engineering complete. Total features: %d", len(df.columns))
         return df
     
     def prepare_features_and_target(
@@ -272,8 +271,8 @@ class FeatureEngineer:
         X = df[feature_cols].copy()
         y = df['service_time_in_minutes'].copy()
         
-        logger.info(f"Prepared {len(feature_cols)} features and {len(y)} target values")
-        logger.info(f"Feature columns: {feature_cols}")
+        logger.info("Prepared %d features and %d target values", len(feature_cols), len(y))
+        logger.info("Feature columns: %s", feature_cols)
         
         return X, y, feature_cols
     
@@ -321,19 +320,19 @@ if __name__ == "__main__":
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
     
-    from data_loader import DataLoader
+    from src.data_loader import DataLoader
     
     # Test feature engineering
     loader = DataLoader()
-    orders, articles, service_times, driver_mapping = loader.load_all()
+    test_orders, test_articles, test_service_times, test_driver_mapping = loader.load_all()
     
     engineer = FeatureEngineer(random_state=42)
-    X, y, feature_names, df = engineer.process_pipeline(
-        orders, articles, service_times, driver_mapping
+    X_result, y_result, feature_names_result, df_result = engineer.process_pipeline(
+        test_orders, test_articles, test_service_times, test_driver_mapping
     )
     
-    print(f"\nFeature Matrix Shape: {X.shape}")
-    print(f"Target Shape: {y.shape}")
-    print(f"Feature Names: {feature_names}")
-    print(f"\nFeature Statistics:\n{X.describe()}")
-    print(f"\nTarget Statistics:\n{y.describe()}")
+    print(f"\nFeature Matrix Shape: {X_result.shape}")
+    print(f"Target Shape: {y_result.shape}")
+    print(f"Feature Names: {feature_names_result}")
+    print(f"\nFeature Statistics:\n{X_result.describe()}")
+    print(f"\nTarget Statistics:\n{y_result.describe()}")

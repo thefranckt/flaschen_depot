@@ -1,6 +1,6 @@
 """
-Logging Module
-Handles feature and prediction logging to SQLite databases.
+Logging-Modul
+Behandelt Feature- und Vorhersage-Logging in SQLite-Datenbanken.
 """
 
 import sqlite3
@@ -15,14 +15,14 @@ logger = logging.getLogger(__name__)
 
 
 class FeatureLogger:
-    """Logs features used for predictions."""
+    """Loggt Features, die für Vorhersagen verwendet werden."""
     
     def __init__(self, db_path: str = "logs/feature_store.db"):
         """
-        Initialize FeatureLogger.
+        FeatureLogger initialisieren.
         
         Args:
-            db_path: Path to SQLite database file
+            db_path: Pfad zur SQLite-Datenbankdatei
         """
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -46,7 +46,7 @@ class FeatureLogger:
         
         conn.commit()
         conn.close()
-        logger.info(f"Feature logger initialized at {self.db_path}")
+        logger.info("Feature logger initialized at %s", self.db_path)
     
     def log_features(
         self,
@@ -111,7 +111,7 @@ class FeatureLogger:
         
         conn.commit()
         conn.close()
-        logger.info(f"Logged {len(data)} feature records")
+        logger.info("Logged %d feature records", len(data))
     
     def get_features(
         self,
@@ -184,7 +184,7 @@ class PredictionLogger:
         
         conn.commit()
         conn.close()
-        logger.info(f"Prediction logger initialized at {self.db_path}")
+        logger.info("Prediction logger initialized at %s", self.db_path)
     
     def log_prediction(
         self,
@@ -254,7 +254,7 @@ class PredictionLogger:
         
         conn.commit()
         conn.close()
-        logger.info(f"Logged {len(data)} prediction records")
+        logger.info("Logged %d prediction records", len(data))
     
     def get_predictions(
         self,

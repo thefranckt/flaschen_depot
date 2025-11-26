@@ -1,6 +1,6 @@
 """
-Model Training Script
-Trains service time prediction model with MLflow tracking and versioning.
+Modell-Training-Skript
+Trainiert Service-Zeit-Vorhersagemodell mit MLflow-Tracking und Versionierung.
 """
 
 import pandas as pd
@@ -20,7 +20,7 @@ from lightgbm import LGBMRegressor
 from src.data_loader import DataLoader
 from src.feature_engineering import FeatureEngineer
 
-# Setup logging
+# Logging einrichten
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -29,14 +29,14 @@ logger = logging.getLogger(__name__)
 
 
 class ModelTrainer:
-    """Handles model training, evaluation, and saving with MLflow."""
+    """Behandelt Modell-Training, -Evaluation und -Speicherung mit MLflow."""
     
     def __init__(self, config_path: str = "config/config.yaml"):
         """
-        Initialize ModelTrainer with configuration.
+        ModelTrainer mit Konfiguration initialisieren.
         
         Args:
-            config_path: Path to configuration file
+            config_path: Pfad zur Konfigurationsdatei
         """
         with open(config_path, 'r') as f:
             self.config = yaml.safe_load(f)
@@ -52,24 +52,24 @@ class ModelTrainer:
     
     def load_and_prepare_data(self):
         """
-        Load and prepare data for training.
+        Daten für Training laden und vorbereiten.
         
         Returns:
-            Tuple of (X_train, X_val, X_test, y_train, y_val, y_test, feature_names)
+            Tuple von (X_train, X_val, X_test, y_train, y_val, y_test, feature_names)
         """
-        logger.info("Loading and preparing data...")
+        logger.info("Lade und bereite Daten vor...")
         
-        # Load data
+        # Daten laden
         loader = DataLoader(self.config['data']['raw_dir'])
         orders, articles, service_times, driver_mapping = loader.load_all()
         
-        # Feature engineering
+        # Feature Engineering
         engineer = FeatureEngineer(random_state=self.random_state)
         X, y, feature_names, df = engineer.process_pipeline(
             orders, articles, service_times, driver_mapping
         )
         
-        # Save processed data
+        # Verarbeitete Daten speichern
         processed_dir = Path(self.config['data']['processed_dir'])
         processed_dir.mkdir(parents=True, exist_ok=True)
         
@@ -77,33 +77,33 @@ class ModelTrainer:
         y.to_frame('service_time_in_minutes').to_parquet(processed_dir / 'target.parquet')
         df.to_parquet(processed_dir / 'full_dataset.parquet')
         
-        logger.info(f"Processed data saved to {processed_dir}")
+        logger.info(f"Verarbeitete Daten gespeichert in {processed_dir}")
         
-        # Split data
+        # Daten aufteilen
         test_size = self.config['model']['test_size']
         val_size = self.config['model']['validation_size']
         
-        # First split: train+val and test
+        # Erste Aufteilung: train+val und test
         X_temp, X_test, y_temp, y_test = train_test_split(
             X, y, test_size=test_size, random_state=self.random_state
         )
         
-        # Second split: train and val
+        # Zweite Aufteilung: train und val
         val_ratio = val_size / (1 - test_size)
         X_train, X_val, y_train, y_val = train_test_split(
             X_temp, y_temp, test_size=val_ratio, random_state=self.random_state
         )
         
-        logger.info(f"Data split - Train: {len(X_train)}, Val: {len(X_val)}, Test: {len(X_test)}")
+        logger.info(f"Daten aufgeteilt - Train: {len(X_train)}, Val: {len(X_val)}, Test: {len(X_test)}")
         
         return X_train, X_val, X_test, y_train, y_val, y_test, feature_names
     
     def create_model(self):
         """
-        Create model based on configuration.
+        Modell basierend auf Konfiguration erstellen.
         
         Returns:
-            Initialized model
+            Initialisiertes Modell
         """
         model_params = self.config['model'][self.model_type]
         
@@ -119,16 +119,16 @@ class ModelTrainer:
     
     def evaluate_model(self, model, X, y, dataset_name=""):
         """
-        Evaluate model and return metrics.
+        Modell evaluieren und Metriken zurückgeben.
         
         Args:
-            model: Trained model
+            model: Trainiertes Modell
             X: Features
             y: Target
-            dataset_name: Name for logging
+            dataset_name: Name für Logging
             
         Returns:
-            Dictionary of metrics
+            Dictionary von Metriken
         """
         predictions = model.predict(X)
         
@@ -146,10 +146,10 @@ class ModelTrainer:
     
     def train(self):
         """
-        Execute full training pipeline with MLflow tracking.
+        Vollständige Training-Pipeline mit MLflow-Tracking ausführen.
         
         Returns:
-            Tuple of (model, metrics, feature_names)
+            Tuple von (model, metrics, feature_names)
         """
         logger.info("Starting training pipeline...")
         
@@ -159,53 +159,53 @@ class ModelTrainer:
             # Load and prepare data
             X_train, X_val, X_test, y_train, y_val, y_test, feature_names = self.load_and_prepare_data()
             
-            # Log data info
+            # Daten-Info loggen
             mlflow.log_param("train_samples", len(X_train))
             mlflow.log_param("val_samples", len(X_val))
             mlflow.log_param("test_samples", len(X_test))
             mlflow.log_param("n_features", len(feature_names))
             mlflow.log_param("feature_names", feature_names)
             
-            # Create and train model
+            # Modell erstellen und trainieren
             model = self.create_model()
             
-            # Log model parameters
+            # Modell-Parameter loggen
             mlflow.log_params(self.config['model'][self.model_type])
             mlflow.log_param("model_type", self.model_type)
             mlflow.log_param("random_state", self.random_state)
             
-            logger.info("Training model...")
+            logger.info("Trainiere Modell...")
             model.fit(X_train, y_train)
-            logger.info("Training complete")
+            logger.info("Training abgeschlossen")
             
-            # Evaluate on all datasets
+            # Auf allen Datensätzen evaluieren
             train_metrics = self.evaluate_model(model, X_train, y_train, "train")
             val_metrics = self.evaluate_model(model, X_val, y_val, "val")
             test_metrics = self.evaluate_model(model, X_test, y_test, "test")
             
-            # Combine all metrics
+            # Alle Metriken kombinieren
             all_metrics = {**train_metrics, **val_metrics, **test_metrics}
             
-            # Log metrics to MLflow
+            # Metriken zu MLflow loggen
             mlflow.log_metrics(all_metrics)
             
-            # Log feature importance
+            # Feature-Wichtigkeit loggen
             if hasattr(model, 'feature_importances_'):
                 feature_importance = pd.DataFrame({
                     'feature': feature_names,
                     'importance': model.feature_importances_
                 }).sort_values('importance', ascending=False)
                 
-                logger.info("\nFeature Importance:")
+                logger.info("\nFeature-Wichtigkeit:")
                 logger.info(feature_importance.to_string())
                 
-                # Save feature importance
+                # Feature-Wichtigkeit speichern
                 importance_path = Path("models") / "feature_importance.csv"
                 importance_path.parent.mkdir(parents=True, exist_ok=True)
                 feature_importance.to_csv(importance_path, index=False)
                 mlflow.log_artifact(str(importance_path))
             
-            # Save model
+            # Modell speichern
             model_dir = Path(self.config['mlflow']['artifact_location'])
             model_dir.mkdir(parents=True, exist_ok=True)
             
@@ -213,14 +213,14 @@ class ModelTrainer:
             model_path = model_dir / f"model_{self.model_type}_{timestamp}.joblib"
             
             joblib.dump(model, model_path)
-            logger.info(f"Model saved to {model_path}")
+            logger.info(f"Modell gespeichert in {model_path}")
             
-            # Also save as 'latest'
+            # Auch als 'latest' speichern
             latest_path = model_dir / "model_latest.joblib"
             joblib.dump(model, latest_path)
-            logger.info(f"Model saved as latest to {latest_path}")
+            logger.info(f"Modell als latest gespeichert in {latest_path}")
             
-            # Log model to MLflow
+            # Modell zu MLflow loggen
             mlflow.sklearn.log_model(model, "model")
             
             # Save metadata
@@ -243,18 +243,18 @@ class ModelTrainer:
 
 
 def main():
-    """Main training function."""
+    """Haupt-Training-Funktion."""
     trainer = ModelTrainer()
     model, metrics, feature_names = trainer.train()
     
     print("\n" + "=" * 80)
-    print("TRAINING COMPLETE")
+    print("TRAINING ABGESCHLOSSEN")
     print("=" * 80)
-    print(f"\nModel Type: {trainer.model_type}")
+    print(f"\nModell-Typ: {trainer.model_type}")
     print(f"Features: {len(feature_names)}")
-    print("\nTest Set Metrics:")
-    print(f"  RMSE: {metrics['test_rmse']:.4f} minutes")
-    print(f"  MAE: {metrics['test_mae']:.4f} minutes")
+    print("\nTest-Set-Metriken:")
+    print(f"  RMSE: {metrics['test_rmse']:.4f} Minuten")
+    print(f"  MAE: {metrics['test_mae']:.4f} Minuten")
     print(f"  R²: {metrics['test_r2']:.4f}")
     print("\n" + "=" * 80)
 
