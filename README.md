@@ -56,6 +56,10 @@ flaschendepot/
 │       └── full_dataset.parquet
 ├── notebooks/
 │   └── 01_exploratory_data_analysis.ipynb  # EDA Notebook
+├── plots/                       # Generierte Visualisierungen (aus EDA)
+│   ├── README.md
+│   ├── .gitkeep
+│   └── *.png                    # Alle EDA Plots (ignoriert von Git)
 ├── src/
 │   ├── __init__.py
 │   ├── data_loader.py           # Daten laden
