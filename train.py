@@ -13,7 +13,6 @@ import mlflow.sklearn
 from pathlib import Path
 from datetime import datetime
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
@@ -108,14 +107,12 @@ class ModelTrainer:
         """
         model_params = self.config['model'][self.model_type]
         
-        if self.model_type == 'random_forest':
-            model = RandomForestRegressor(**model_params)
+        if self.model_type == 'lightgbm':
+            model = LGBMRegressor(**model_params)
         elif self.model_type == 'xgboost':
             model = XGBRegressor(**model_params)
-        elif self.model_type == 'lightgbm':
-            model = LGBMRegressor(**model_params)
         else:
-            raise ValueError(f"Unknown model type: {self.model_type}")
+            raise ValueError(f"Unknown model type: {self.model_type}. Use 'lightgbm' or 'xgboost'")
         
         logger.info(f"Created {self.model_type} model with params: {model_params}")
         return model
