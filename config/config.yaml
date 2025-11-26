@@ -1,0 +1,99 @@
+# Service Time Prediction - Configuration
+
+# Data paths
+data:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  orders_file: "data/raw/orders.parquet"
+  articles_file: "data/raw/articles.parquet"
+  service_times_file: "data/raw/service_times.parquet"
+  driver_mapping_file: "data/raw/driver_order_mapping.parquet"
+  processed_features: "data/processed/features.parquet"
+  processed_target: "data/processed/target.parquet"
+
+# Model settings
+model:
+  name: "service_time_predictor"
+  type: "random_forest"  # Options: random_forest, xgboost, lightgbm
+  random_state: 42
+  test_size: 0.2
+  validation_size: 0.1
+  
+  # Model hyperparameters
+  random_forest:
+    n_estimators: 100
+    max_depth: 20
+    min_samples_split: 5
+    min_samples_leaf: 2
+    random_state: 42
+    n_jobs: -1
+  
+  xgboost:
+    n_estimators: 100
+    max_depth: 10
+    learning_rate: 0.1
+    random_state: 42
+  
+  lightgbm:
+    n_estimators: 100
+    max_depth: 10
+    learning_rate: 0.1
+    random_state: 42
+
+# Feature engineering
+features:
+  # Outlier removal (IQR method)
+  outlier_removal:
+    enabled: true
+    iqr_multiplier: 1.5
+  
+  # Missing value handling
+  missing_values:
+    strategy: "median"  # Options: mean, median, mode, drop
+  
+  # Feature groups to create
+  engineering:
+    - total_weight
+    - total_boxes
+    - total_articles
+    - avg_article_weight
+    - weight_per_box
+    - order_hour
+    - order_day_of_week
+    - order_month
+    - is_weekend
+    - floor_elevator_interaction
+    - business_floor_interaction
+
+# MLflow settings
+mlflow:
+  tracking_uri: "mlruns"
+  experiment_name: "service_time_prediction"
+  artifact_location: "models"
+
+# API settings
+api:
+  host: "0.0.0.0"
+  port: 8000
+  reload: true
+  log_level: "info"
+  cors_enabled: true
+  max_batch_size: 100
+
+# Logging settings
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/app.log"
+  
+  # Feature and prediction logging
+  feature_log_db: "logs/feature_store.db"
+  prediction_log_db: "logs/prediction_store.db"
+  
+  # Retention settings
+  max_log_age_days: 90
+
+# Reproducibility
+reproducibility:
+  seed: 42
+  deterministic: true

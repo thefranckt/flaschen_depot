@@ -1,7 +1,0 @@
-# DVC Configuration
-[core]
-    remote = local
-    autostage = true
-
-['remote "local"']
-    url = ./dvc-storage

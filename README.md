@@ -1,385 +1,799 @@
-# 🚚 Flaschendepot - Service-Time Prediction MLOps
+# Service Time Prediction - MLOps Projekt
 
-## 📋 Projektübersicht
+Ein End-to-End Machine Learning System zur Vorhersage von Lieferzeiten (Service Time) für Flaschenpost-Bestellungen.
 
-Vollständiges **MLOps-System** für die **Service-Time-Vorhersage** bei Getränkelieferungen.  
-Nutzt **1.5 Millionen echte Bestellungen** für Machine Learning Regression.
+## 📋 Inhaltsverzeichnis
 
-### 🎯 Ziel
-Vorhersage der **Service-Zeit** (Minuten) basierend auf:
-- 📦 Artikelanzahl & Gewicht
-- 🏢 Stockwerk & Aufzug
-- 🕐 Tageszeit & Wochentag  
-- 📍 Warehouse & Kundentyp
-
----
-
-## 📊 Daten - 4 Parquet-Dateien
-
-| Datei | Zeilen | Beschreibung |
-|-------|--------|-------------|
-| **articles.parquet** | 15.6M | Artikel mit Gewichten |
-| **orders.parquet** | 1.5M | Bestellinformationen |
-| **driver_order_mapping.parquet** | 1.5M | Fahrer-Zuordnung |
-| **service_times.parquet** ⭐ | 1.5M | **Service-Zeiten (Target)** |
-
-### Zielvariable
-**`service_time_in_minutes`**  
-- Min: 0.02 min | Max: 360 min  
-- **Median: 8.0 min** | Mean: 9.4 min  
-- Regression-Problem
+- [Projektübersicht](#projektübersicht)
+- [Projektstruktur](#projektstruktur)
+- [Setup](#setup)
+- [Feature Engineering](#feature-engineering)
+- [Model Training](#model-training)
+- [API](#api)
+- [Logging](#logging)
+- [Reproduzierbarkeit](#reproduzierbarkeit)
+- [Modellversionierung](#modellversionierung)
 
 ---
 
-## 🚀 Quick Start
+## 🎯 Projektübersicht
 
-### 1. Installation
+Dieses Projekt implementiert eine vollständige MLOps-Pipeline zur Vorhersage der Service Time (Dauer der Auslieferung beim Kunden) basierend auf historischen Bestelldaten.
 
-```powershell
-# Virtual Environment
-python -m venv venv
-.\venv\Scripts\activate
+**Hauptkomponenten:**
+- 📊 Explorative Datenanalyse (EDA)
+- 🔧 Feature Engineering Pipeline
+- 🤖 Model Training mit MLflow Tracking
+- 🚀 REST API für Predictions
+- 📝 Feature und Prediction Logging
+- 🔄 Modellversionierung
 
-# Dependencies
-pip install -r requirements.txt
-```
-
-### 2. Datenverarbeitung
-
-```powershell
-python src\data\make_dataset.py
-```
-
-**Was passiert:**
-- ✅ Lädt 4 Parquet-Dateien aus `data/raw/`
-- ✅ Merged über `web_order_id`
-- ✅ Aggregiert Artikel-Stats (Anzahl, Gewicht)
-- ✅ Bereinigt & filtert Daten
-- ✅ Train/Test Split (80/20)
-- ✅ Speichert in `data/processed/`
-
-**Output**: ~1.2M Training, ~307K Test
-
-### 3. Exploratory Data Analysis
-
-```powershell
-jupyter notebook notebooks/01_eda_delivery_service.ipynb
-```
-
-**Notebook-Inhalte:**
-- 📊 Service-Time Verteilungen
-- 📈 Stockwerk vs Service-Zeit
-- 🏋️ Gewicht & Artikelanzahl Impact
-- 🕐 Zeitliche Muster-Analyse
-- 💡 Key Insights
+**Technologie-Stack:**
+- Python 3.13
+- scikit-learn, XGBoost, LightGBM
+- FastAPI
+- MLflow
+- Pandas, NumPy
+- SQLite (für Logging)
 
 ---
 
-## 🏗️ Projekt-Architektur
+## 📁 Projektstruktur
 
 ```
 flaschendepot/
+├── config/
+│   └── config.yaml              # Zentrale Konfiguration
 ├── data/
-│   ├── raw/                    # 4 Parquet-Dateien hier!
-│   │   ├── articles.parquet
+│   ├── raw/                     # Rohdaten (Parquet-Dateien)
 │   │   ├── orders.parquet
-│   │   ├── driver_order_mapping.parquet
-│   │   └── service_times.parquet
-│   └── processed/              # Train/Test CSVs
+│   │   ├── articles.parquet
+│   │   ├── service_times.parquet
+│   │   └── driver_order_mapping.parquet
+│   └── processed/               # Verarbeitete Daten
+│       ├── features.parquet
+│       ├── target.parquet
+│       └── full_dataset.parquet
 ├── notebooks/
-│   └── 01_eda_delivery_service.ipynb  # Explorative Analyse
+│   └── 01_exploratory_data_analysis.ipynb  # EDA Notebook
 ├── src/
-│   ├── data/
-│   │   └── make_dataset.py     # Daten laden & mergen
-│   ├── features/
-│   │   └── build_features.py   # Feature Engineering
-│   ├── models/
-│   │   ├── train_model.py      # Training (Regression)
-│   │   └── predict.py          # Vorhersagen
-│   └── api/
-│       └── main.py             # FastAPI REST API
-├── configs/
-│   └── config.yaml             # Konfiguration
-├── models/                     # Trainierte Modelle
-├── tests/                      # Unit Tests
-└── scripts/
-    └── train_pipeline.py       # End-to-End Pipeline
+│   ├── __init__.py
+│   ├── data_loader.py           # Daten laden
+│   ├── feature_engineering.py   # Feature Engineering
+│   └── logger.py                # Feature & Prediction Logging
+├── models/                      # Gespeicherte Modelle
+│   ├── model_latest.joblib
+│   └── model_*.joblib
+├── logs/                        # Log-Datenbanken
+│   ├── feature_store.db
+│   ├── prediction_store.db
+│   └── app.log
+├── mlruns/                      # MLflow Tracking
+├── tests/                       # Unit Tests
+├── train.py                     # Training Script
+├── api.py                       # FastAPI Application
+├── requirements.txt             # Python Dependencies
+├── .env.example                 # Environment Template
+├── .gitignore
+└── README.md
 ```
 
 ---
 
-## 🔬 Features
+## 🚀 Setup
 
-### Input-Features
+### 1. Voraussetzungen
 
-**Kategorisch:**
-- `warehouse_id`: Warehouse-Standort
-- `has_elevator`: Aufzug vorhanden? (boolean)
-- `is_pre_order`: Vorbestellung? (boolean)
-- `is_business`: B2B-Kunde? (boolean)
+- Python 3.13+
+- Git
+- Virtual Environment Tool (venv)
 
-**Numerisch:**
-- `floor`: Stockwerk (0-20+)
-- `num_articles`: Anzahl Artikel
-- `total_weight_g`: Gesamtgewicht in Gramm
-- `avg_article_weight_g`: Durchschnittsgewicht
-- `max_article_weight_g`: Maximales Artikel-Gewicht
+### 2. Repository klonen
 
-**Zeitlich (aus Timestamps):**
-- `hour_of_day`: Stunde (0-23)
-- `day_of_week`: Wochentag (0-6)
-- `is_weekend`: Wochenende? (0/1)
-- `month`: Monat (1-12)
+```bash
+git clone <repository-url>
+cd flaschendepot
+```
 
-**Abgeleitete Features:**
-- `total_weight_kg`: Gewicht in kg
-- `difficulty_score`: Schwierigkeits-Score (Stockwerk + Gewicht + Aufzug)
-- `order_size_category`: Größenkategorie (small/medium/large/very_large)
+### 3. Virtual Environment erstellen
 
-### Target Variable
-- **`service_time_in_minutes`**: Service-Zeit in Minuten (Regression!)
+```bash
+# Windows (PowerShell/CMD)
+python -m venv myenv
+myenv\Scripts\activate
+
+# Windows (Git Bash)
+python -m venv myenv
+source myenv/Scripts/activate
+
+# Linux/Mac
+python -m venv myenv
+source myenv/bin/activate
+```
+
+### 4. Dependencies installieren
+
+```bash
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+### 5. Daten vorbereiten
+
+Legen Sie die Parquet-Dateien in den `data/raw/` Ordner:
+- `orders.parquet`
+- `articles.parquet`
+- `service_times.parquet`
+- `driver_order_mapping.parquet`
+
+### 6. Konfiguration (optional)
+
+Kopieren Sie `.env.example` zu `.env` und passen Sie die Werte an:
+
+```bash
+cp .env.example .env
+```
+
+Bearbeiten Sie `config/config.yaml` für erweiterte Konfiguration.
 
 ---
 
-## 🤖 Machine Learning
+## 🔧 Feature Engineering
 
-### Algorithmen
-- Random Forest Regressor
-- Gradient Boosting Regressor
-- XGBoost Regressor
-- LightGBM Regressor
+### Datenpipeline
 
-### Metriken
-- MAE (Mean Absolute Error)
-- RMSE (Root Mean Squared Error)
-- R² (R-squared)
-- MAPE (Mean Absolute Percentage Error)
+Die Feature Engineering Pipeline führt folgende Schritte aus:
 
-### Training
+1. **Daten Laden**
+   - Orders: Bestellinformationen (Etage, Aufzug, Geschäftskunde)
+   - Articles: Artikelinformationen (Gewicht, Anzahl)
+   - Service Times: Zielvariable (service_time_in_minutes)
+   - Driver Mapping: Zuordnung Fahrer-Bestellungen
 
-```powershell
-# Komplette Pipeline
-python scripts\train_pipeline.py
+2. **Daten Zusammenführen**
+   - Join auf `web_order_id`
+   - Aggregation der Artikel-Daten pro Bestellung
 
-# Nur Training
-python src\models\train_model.py
+3. **Datenbereinigung**
+   - Entfernung von Missing Values in Zielvariable
+   - Entfernung negativer/null Service Times
+   - Imputation von Missing Values in Features
+   - Ausreißer-Erkennung mit IQR-Methode
+
+4. **Feature Engineering**
+   - **Zeitliche Features:**
+     - `order_hour`: Stunde der Bestellung
+     - `order_day_of_week`: Wochentag (0=Montag)
+     - `order_month`: Monat
+     - `is_weekend`: Wochenende-Indikator
+   
+   - **Aggregierte Features:**
+     - `total_boxes`: Anzahl Kisten
+     - `total_articles`: Anzahl Artikel
+     - `total_weight_g`: Gesamtgewicht
+     - `avg_article_weight_g`: Durchschnittsgewicht pro Artikel
+     - `max_article_weight_g`: Maximales Artikelgewicht
+     - `min_article_weight_g`: Minimales Artikelgewicht
+     - `weight_per_box`: Gewicht pro Kiste
+   
+   - **Interaktions-Features:**
+     - `floor_elevator_interaction`: Etage × Aufzug
+     - `business_floor_interaction`: Geschäftskunde × Etage
+
+### EDA durchführen
+
+```bash
+# Jupyter Notebook starten
+jupyter notebook notebooks/01_exploratory_data_analysis.ipynb
+```
+
+Das Notebook enthält:
+- Datenqualitätsprüfung
+- Deskriptive Statistiken
+- Verteilungsanalysen
+- Korrelationsanalyse
+- Feature-Wichtigkeit Visualisierungen
+
+### Programmatische Verwendung
+
+```python
+from src.data_loader import DataLoader
+from src.feature_engineering import FeatureEngineer
+
+# Daten laden
+loader = DataLoader("data/raw")
+orders, articles, service_times, driver_mapping = loader.load_all()
+
+# Feature Engineering
+engineer = FeatureEngineer(random_state=42)
+X, y, feature_names, df = engineer.process_pipeline(
+    orders, articles, service_times, driver_mapping
+)
 ```
 
 ---
 
-## 🌐 API (FastAPI)
+## 🤖 Model Training
 
-### Server starten
+### Training ausführen
 
-```powershell
-uvicorn src.api.main:app --reload
+```bash
+python train.py
 ```
+
+### Was passiert beim Training?
+
+1. **Daten laden und vorbereiten**
+   - Lädt Rohdaten
+   - Führt Feature Engineering durch
+   - Speichert verarbeitete Daten in `data/processed/`
+
+2. **Daten splitten**
+   - Training: 70%
+   - Validation: 10%
+   - Test: 20%
+   - Stratifiziert mit `random_state=42`
+
+3. **Modell trainieren**
+   - Standardmäßig: Random Forest Regressor
+   - Konfigurierbar über `config/config.yaml`
+   - Unterstützte Modelle: Random Forest, XGBoost, LightGBM
+
+4. **Evaluierung**
+   - Metriken: RMSE, MAE, R²
+   - Auf Training, Validation und Test Set
+   - Feature Importance Analyse
+
+5. **Speicherung**
+   - Modell als `models/model_latest.joblib`
+   - Zeitstempel-Version: `models/model_{type}_{timestamp}.joblib`
+   - Metadata als YAML
+
+6. **MLflow Tracking**
+   - Alle Parameter und Metriken werden geloggt
+   - Modell wird registriert
+   - Artefakte werden gespeichert
+
+### Modell konfigurieren
+
+Bearbeiten Sie `config/config.yaml`:
+
+```yaml
+model:
+  type: "random_forest"  # Options: random_forest, xgboost, lightgbm
+  random_state: 42
+  
+  random_forest:
+    n_estimators: 100
+    max_depth: 20
+    min_samples_split: 5
+```
+
+### MLflow UI ansehen
+
+```bash
+mlflow ui
+```
+
+Öffnen Sie http://localhost:5000 im Browser.
+
+---
+
+## 🚀 API
+
+### API starten
+
+```bash
+# Direkt
+python api.py
+
+# Oder mit uvicorn
+uvicorn api:app --host 0.0.0.0 --port 8000 --reload
+```
+
+Die API ist verfügbar unter: http://localhost:8000
+
+### API Dokumentation
+
+- **Swagger UI:** http://localhost:8000/docs
+- **ReDoc:** http://localhost:8000/redoc
 
 ### Endpoints
 
-**GET** `/health` - Health Check
+#### 1. Health Check
 
-**POST** `/predict` - Einzelvorhersage
+```bash
+GET /health
+```
+
+**Response:**
 ```json
 {
-  "warehouse_id": 12,
-  "has_elevator": false,
-  "floor": 3.0,
-  "is_pre_order": true,
-  "is_business": false,
-  "num_articles": 15,
-  "total_weight_g": 25000,
-  "hour_of_day": 14,
-  "day_of_week": 2
+  "status": "healthy",
+  "timestamp": "2024-11-26T10:30:00",
+  "models_loaded": 1,
+  "available_versions": ["latest"]
+}
+```
+
+#### 2. Single Prediction
+
+```bash
+POST /predict?model_version=latest
+Content-Type: application/json
+
+{
+  "driver_id": "D001",
+  "web_order_id": "ORDER_12345"
 }
 ```
 
 **Response:**
 ```json
 {
-  "predicted_service_time": 11.5,
-  "confidence_interval": [9.2, 13.8]
+  "driver_id": "D001",
+  "web_order_id": "ORDER_12345",
+  "predicted_service_time": 12.5,
+  "model_version": "latest",
+  "timestamp": "2024-11-26T10:30:00",
+  "request_id": "uuid-1234"
 }
 ```
 
-API Docs: http://localhost:8000/docs
+#### 3. Batch Predictions
 
----
+```bash
+POST /predict/batch
+Content-Type: application/json
 
-## 🐳 Docker
+{
+  "model_version": "latest",
+  "requests": [
+    {"driver_id": "D001", "web_order_id": "ORDER_1"},
+    {"driver_id": "D002", "web_order_id": "ORDER_2"},
+    {"driver_id": "D003", "web_order_id": "ORDER_3"}
+  ]
+}
+```
 
-```powershell
-# Build
-docker build -t flaschendepot:latest .
+**Response:**
+```json
+{
+  "predictions": [
+    {
+      "driver_id": "D001",
+      "web_order_id": "ORDER_1",
+      "predicted_service_time": 12.5,
+      "model_version": "latest",
+      "timestamp": "2024-11-26T10:30:00",
+      "request_id": "batch-uuid"
+    },
+    ...
+  ],
+  "total_count": 3,
+  "request_id": "batch-uuid",
+  "timestamp": "2024-11-26T10:30:00"
+}
+```
 
-# Run Training
-docker run --rm -v ${PWD}/data:/app/data flaschendepot
+#### 4. List Models
 
-# Run API
-docker-compose up api
+```bash
+GET /models
+```
+
+#### 5. Get Feature Logs
+
+```bash
+GET /logs/features?web_order_id=ORDER_1&limit=10
+```
+
+#### 6. Get Prediction Logs
+
+```bash
+GET /logs/predictions?driver_id=D001&limit=10
+```
+
+#### 7. Get Statistics
+
+```bash
+GET /logs/statistics
+```
+
+### API Beispiele (Python)
+
+```python
+import requests
+
+# Single Prediction
+response = requests.post(
+    "http://localhost:8000/predict",
+    json={
+        "driver_id": "D001",
+        "web_order_id": "ORDER_12345"
+    },
+    params={"model_version": "latest"}
+)
+print(response.json())
+
+# Batch Prediction
+response = requests.post(
+    "http://localhost:8000/predict/batch",
+    json={
+        "model_version": "latest",
+        "requests": [
+            {"driver_id": "D001", "web_order_id": "ORDER_1"},
+            {"driver_id": "D002", "web_order_id": "ORDER_2"}
+        ]
+    }
+)
+print(response.json())
+```
+
+### API Beispiele (cURL)
+
+```bash
+# Single Prediction
+curl -X POST "http://localhost:8000/predict?model_version=latest" \
+  -H "Content-Type: application/json" \
+  -d '{"driver_id": "D001", "web_order_id": "ORDER_12345"}'
+
+# Batch Prediction
+curl -X POST "http://localhost:8000/predict/batch" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model_version": "latest",
+    "requests": [
+      {"driver_id": "D001", "web_order_id": "ORDER_1"},
+      {"driver_id": "D002", "web_order_id": "ORDER_2"}
+    ]
+  }'
 ```
 
 ---
 
-## 📈 MLflow Tracking
+## 📝 Logging
 
-```powershell
+### Logging-System
+
+Das Projekt implementiert zwei separate Logging-Datenbanken:
+
+1. **Feature Store** (`logs/feature_store.db`)
+   - Speichert alle Features für jede Prediction
+   - Ermöglicht Feature-Lookup und Debugging
+
+2. **Prediction Store** (`logs/prediction_store.db`)
+   - Speichert alle Predictions mit Metadata
+   - Tracking von Modellversionen
+   - Request-IDs für Batch-Requests
+
+### Logging-Schema
+
+**Feature Logs:**
+```sql
+CREATE TABLE feature_logs (
+    id INTEGER PRIMARY KEY,
+    timestamp TEXT,
+    web_order_id TEXT,
+    driver_id TEXT,
+    features TEXT (JSON),
+    model_version TEXT
+)
+```
+
+**Prediction Logs:**
+```sql
+CREATE TABLE prediction_logs (
+    id INTEGER PRIMARY KEY,
+    timestamp TEXT,
+    web_order_id TEXT,
+    driver_id TEXT,
+    predicted_service_time REAL,
+    model_version TEXT,
+    request_id TEXT
+)
+```
+
+### Logs inspizieren
+
+#### Über API
+
+```bash
+# Feature Logs abrufen
+curl "http://localhost:8000/logs/features?limit=10"
+
+# Prediction Logs abrufen
+curl "http://localhost:8000/logs/predictions?limit=10"
+
+# Statistiken
+curl "http://localhost:8000/logs/statistics"
+```
+
+#### Programmatisch
+
+```python
+from src.logger import FeatureLogger, PredictionLogger
+
+# Feature Logs
+feature_logger = FeatureLogger("logs/feature_store.db")
+logs = feature_logger.get_features(web_order_id="ORDER_1", limit=10)
+print(logs)
+
+# Prediction Logs
+prediction_logger = PredictionLogger("logs/prediction_store.db")
+logs = prediction_logger.get_predictions(driver_id="D001", limit=10)
+print(logs)
+
+# Statistiken
+stats = prediction_logger.get_statistics()
+print(stats)
+```
+
+#### Mit SQLite
+
+```bash
+sqlite3 logs/feature_store.db "SELECT * FROM feature_logs LIMIT 10;"
+sqlite3 logs/prediction_store.db "SELECT * FROM prediction_logs LIMIT 10;"
+```
+
+### Log-Retention
+
+Konfigurierbar in `config/config.yaml`:
+
+```yaml
+logging:
+  max_log_age_days: 90  # Logs älter als 90 Tage werden gelöscht
+```
+
+---
+
+## 🔄 Reproduzierbarkeit
+
+Das Projekt implementiert mehrere Mechanismen zur Sicherstellung reproduzierbarer Ergebnisse:
+
+### 1. Random Seeds
+
+Alle zufälligen Operationen verwenden denselben Seed:
+
+```yaml
+# config/config.yaml
+model:
+  random_state: 42
+
+reproducibility:
+  seed: 42
+  deterministic: true
+```
+
+**Verwendung:**
+- Train-Test Split
+- Model Initialization
+- Feature Engineering (bei zufälligen Operationen)
+
+### 2. Daten-Versionierung
+
+- **Rohdaten:** Unveränderlich in `data/raw/`
+- **Verarbeitete Daten:** Werden bei jedem Training neu generiert und gespeichert
+- **Empfehlung:** Verwenden Sie DVC (Data Version Control) für Produktionsumgebungen
+
+```bash
+# DVC initialisieren (optional)
+dvc init
+dvc add data/raw/*.parquet
+git add data/raw/*.parquet.dvc .dvc/
+```
+
+### 3. Environment Management
+
+**Exakte Dependency-Versionen:**
+```bash
+pip freeze > requirements.txt
+```
+
+**Reproduzierbares Environment:**
+```bash
+pip install -r requirements.txt
+```
+
+### 4. MLflow Tracking
+
+Alle Trainings-Runs werden mit MLflow getrackt:
+- **Parameter:** Alle Model-Hyperparameter
+- **Metriken:** RMSE, MAE, R² auf allen Datasets
+- **Artefakte:** Modelle, Feature Importance, Metadata
+- **Code Version:** Git commit hash (wenn in Git Repository)
+
+### 5. Konfigurationsdatei
+
+Alle Einstellungen in `config/config.yaml`:
+- Model-Parameter
+- Feature Engineering Einstellungen
+- Daten-Pfade
+- API-Konfiguration
+
+### 6. Reproduzierbarer Workflow
+
+```bash
+# 1. Environment setup
+python -m venv myenv
+source myenv/Scripts/activate  # oder myenv\Scripts\activate (Windows)
+pip install -r requirements.txt
+
+# 2. Daten vorbereiten
+# Kopiere Parquet-Dateien nach data/raw/
+
+# 3. Training
+python train.py
+
+# 4. API starten
+python api.py
+```
+
+### Reproduzierbarkeits-Checklist
+
+- [x] Feste Random Seeds (`random_state=42`)
+- [x] Versions-kontrollierte Dependencies (`requirements.txt`)
+- [x] Konfigurationsdatei (`config/config.yaml`)
+- [x] MLflow Tracking aller Experimente
+- [x] Gespeicherte verarbeitete Daten
+- [x] Dokumentierte Feature Engineering Pipeline
+- [x] Deterministische Daten-Splits
+
+---
+
+## 🔢 Modellversionierung
+
+### Versionierung mit MLflow
+
+Alle Modelle werden automatisch versioniert:
+
+1. **Timestamp-basiert:**
+   - Format: `model_{type}_{YYYYMMDD_HHMMSS}.joblib`
+   - Beispiel: `model_random_forest_20241126_103000.joblib`
+
+2. **Latest-Link:**
+   - Immer verfügbar: `model_latest.joblib`
+   - Zeigt auf zuletzt trainiertes Modell
+
+3. **MLflow Registry:**
+   - Alle Runs in `mlruns/` gespeichert
+   - Browseable über MLflow UI
+
+### Modelle verwalten
+
+#### Verfügbare Modelle anzeigen
+
+```bash
+# Via API
+curl http://localhost:8000/models
+
+# Via MLflow UI
 mlflow ui
+# Öffne http://localhost:5000
 ```
 
-Öffne: http://localhost:5000
+#### Spezifisches Modell verwenden
 
-Tracked automatisch:
-- Hyperparameter
-- Metriken (MAE, RMSE, R²)
-- Modelle & Artefakte
+```python
+import requests
+
+response = requests.post(
+    "http://localhost:8000/predict",
+    json={"driver_id": "D001", "web_order_id": "ORDER_1"},
+    params={"model_version": "random_forest_20241126_103000"}
+)
+```
+
+#### Modell-Metadaten lesen
+
+```python
+import yaml
+
+with open("models/metadata_20241126_103000.yaml") as f:
+    metadata = yaml.safe_load(f)
+    print(metadata)
+```
+
+**Metadata enthält:**
+- Model Type
+- Training Timestamp
+- Metriken (RMSE, MAE, R²)
+- Feature Names
+- Model Path
+
+### A/B Testing
+
+Laden Sie mehrere Modellversionen und vergleichen Sie Predictions:
+
+```python
+# Via API
+response_v1 = requests.post(
+    "http://localhost:8000/predict",
+    json={"driver_id": "D001", "web_order_id": "ORDER_1"},
+    params={"model_version": "latest"}
+)
+
+response_v2 = requests.post(
+    "http://localhost:8000/predict",
+    json={"driver_id": "D001", "web_order_id": "ORDER_1"},
+    params={"model_version": "random_forest_20241125_120000"}
+)
+
+print(f"V1: {response_v1.json()['predicted_service_time']}")
+print(f"V2: {response_v2.json()['predicted_service_time']}")
+```
 
 ---
 
 ## 🧪 Testing
 
-```powershell
-# Alle Tests
-pytest
+```bash
+# Alle Tests ausführen
+pytest tests/
 
 # Mit Coverage
-pytest --cov=src --cov-report=html
-
-# Spezifische Tests
-pytest tests/test_data_processing.py
-pytest tests/test_models.py
+pytest tests/ --cov=src --cov-report=html
 ```
 
 ---
 
-## 💡 Key Insights (aus EDA)
+## 📊 Monitoring
 
-1. **Service-Zeit Durchschnitt**: ~9.4 Minuten (Median: 8.0 min)
+### Production Monitoring (Empfehlungen)
 
-2. **Stockwerk-Effekt**:
-   - Pro Stockwerk: +0.3-0.5 min
-   - Mit Aufzug: ~30% schneller
+1. **Model Performance:**
+   - Sammeln Sie Ground Truth Labels
+   - Vergleichen Sie mit Predictions aus Logs
+   - Berechnen Sie periodisch Metriken
 
-3. **Gewicht-Impact**:
-   - Ab 30kg: Deutlicher Anstieg
-   - Linear bis ~50kg, dann exponentiell
+2. **Data Drift:**
+   - Überwachen Sie Feature-Verteilungen
+   - Alert bei signifikanten Abweichungen
 
-4. **Zeitliche Muster**:
-   - Peak-Zeiten: 12-14 Uhr & 18-20 Uhr
-   - Wochenende: +5-10% längere Service-Zeit
-
-5. **Artikel-Anzahl**:
-   - Moderater Einfluss
-   - >20 Artikel: Signifikant länger
+3. **API Performance:**
+   - Response Times
+   - Error Rates
+   - Throughput
 
 ---
 
-## 📚 Verwendung
+## 🤝 Contributing
 
-### 1. Datenverarbeitung
-```powershell
-python src\data\make_dataset.py
-```
-
-### 2. Feature Engineering
-```powershell
-python src\features\build_features.py
-```
-
-### 3. Training
-```powershell
-python src\models\train_model.py
-```
-
-### 4. Vorhersagen
-```python
-from src.models.predict import DeliveryPredictor
-
-predictor = DeliveryPredictor()
-
-delivery_data = {
-    'warehouse_id': 12,
-    'floor': 3.0,
-    'has_elevator': False,
-    'num_articles': 15,
-    'total_weight_g': 25000,
-    'hour_of_day': 14
-}
-
-result = predictor.predict_single(delivery_data)
-print(f"Geschätzte Service-Zeit: {result['prediction']:.1f} Minuten")
-```
+1. Fork das Repository
+2. Erstelle einen Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit deine Änderungen (`git commit -m 'Add AmazingFeature'`)
+4. Push zum Branch (`git push origin feature/AmazingFeature`)
+5. Erstelle einen Pull Request
 
 ---
 
-## 🔄 CI/CD Pipeline
+## 📄 Lizenz
 
-GitHub Actions führt automatisch aus:
-- ✅ Tests (Python 3.9, 3.10, 3.11)
-- ✅ Linting (black, flake8, isort)
-- ✅ Build & Package
-- ✅ Docker Image Build
-
----
-
-## 📦 DVC - Data Versioning
-
-```powershell
-# Daten tracken
-dvc add data/raw/*.parquet
-dvc add models/*.pkl
-
-# Commit
-git add data/.dvc models/.dvc
-git commit -m "Track data and models"
-
-# Push
-dvc push
-```
-
----
-
-## 🎯 Projektziele & Use Cases
-
-### Business Value
-- ⏱️ **Bessere Routenplanung** durch genaue Zeitschätzungen
-- 🚚 **Effizientere Tourenplanung** für Fahrer
-- 📊 **Kapazitätsplanung** basierend auf erwarteten Service-Zeiten
-- 💰 **Kosteneinsparungen** durch optimierte Routen
-
-### Technical Goals
-- ✅ Production-Ready MLOps Pipeline
-- ✅ Reproduzierbare Experimente
-- ✅ Automatisierte Tests & CI/CD
-- ✅ API für Real-Time Predictions
-- ✅ Versionierung (Code, Daten, Modelle)
+Dieses Projekt wurde für die Flaschenpost SE Bewerbung erstellt.
 
 ---
 
 ## 👤 Autor
 
-**Franz**  
-Data Science MLOps Project
+**Ihr Name**
+- GitHub: [@username]
+- Email: your.email@example.com
 
 ---
 
-## 📝 Lizenz
+## 🙏 Acknowledgments
 
-MIT License
-
----
-
-## 🙏 Tech Stack
-
-- **ML**: scikit-learn, XGBoost, LightGBM
-- **Data**: pandas, numpy, pyarrow (Parquet)
-- **Visualization**: matplotlib, seaborn, plotly
-- **MLOps**: MLflow, DVC
-- **API**: FastAPI, uvicorn
-- **Testing**: pytest
-- **CI/CD**: GitHub Actions
-- **Containerization**: Docker, Docker Compose
+- Flaschenpost SE für die Aufgabenstellung
+- scikit-learn, MLflow, FastAPI Communities
 
 ---
 
-**Happy Predicting! 🚀📦**
+## 📞 Support
+
+Bei Fragen oder Problemen:
+1. Öffne ein Issue auf GitHub
+2. Kontaktiere über Email
+
+---
+
+**Viel Erfolg! 🚀**

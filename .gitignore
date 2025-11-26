@@ -19,45 +19,43 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
 # Virtual Environment
+myenv/
 venv/
 env/
 ENV/
-
-# Jupyter Notebooks
-.ipynb_checkpoints
-*.ipynb
 
 # IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# Data
-data/raw/*
-data/processed/*
-!data/raw/.gitkeep
-!data/processed/.gitkeep
-
-# Models
-models/*.pkl
-models/*.h5
-models/*.joblib
-!models/.gitkeep
-
-# MLflow
-mlruns/
-mlartifacts/
-
-# DVC
-.dvc/cache
-.dvc/tmp
+# Jupyter Notebook
+.ipynb_checkpoints
 
 # Environment variables
 .env
-.env.local
+
+# Data files (keep structure, ignore actual data)
+data/raw/*.parquet
+data/raw/*.csv
+data/processed/*.parquet
+data/processed/*.csv
+
+# Model artifacts
+models/*.pkl
+models/*.joblib
+mlruns/
+models/mlruns/
+
+# Logs
+logs/*.log
+logs/*.db
+logs/*.db-journal
 
 # OS
 .DS_Store
@@ -67,8 +65,9 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
-.tox/
 
-# Logs
-*.log
-logs/
+# MLflow
+mlartifacts/
+
+# DVC
+.dvc/cache
