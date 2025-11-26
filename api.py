@@ -103,6 +103,16 @@ class HealthResponse(BaseModel):
     available_versions: List[str]
 
 
+class ModelMetrics(BaseModel):
+    """Model performance metrics response."""
+    model_version: str
+    model_type: str
+    timestamp: str
+    training_metrics: Dict
+    test_metrics: Dict
+    feature_importance: Optional[List[Dict]]
+
+
 def load_model(version: str = "latest"):
     """
     Load model from disk.
@@ -216,6 +226,14 @@ def extract_features(web_order_id: str, driver_id: str) -> Dict:
 async def startup_event():
     """Initialize on startup."""
     logger.info("Starting Service Time Prediction API...")
+    
+    # Initialize loggers (ensure DB tables are created)
+    try:
+        feature_logger._initialize_db()
+        prediction_logger._initialize_db()
+        logger.info("✓ Database loggers initialized")
+    except Exception as e:
+        logger.warning(f"Could not initialize loggers: {e}")
     
     # Load default model
     try:
@@ -466,6 +484,76 @@ async def get_prediction_statistics():
         stats = prediction_logger.get_statistics()
         return stats
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/metrics", response_model=ModelMetrics)
+async def get_model_metrics(version: str = "latest"):
+    """
+    Get model performance metrics.
+    
+    Args:
+        version: Model version (default: latest)
+    
+    Returns:
+        Model metrics including training and test performance
+    """
+    try:
+        model_dir = Path(config['mlflow']['artifact_location'])
+        
+        # Find the latest metadata file
+        if version == "latest":
+            metadata_files = sorted(model_dir.glob("metadata_*.yaml"))
+            if not metadata_files:
+                raise HTTPException(status_code=404, detail="No metadata files found")
+            metadata_path = metadata_files[-1]
+        else:
+            metadata_path = model_dir / f"metadata_{version}.yaml"
+            if not metadata_path.exists():
+                raise HTTPException(status_code=404, detail=f"Metadata for version {version} not found")
+        
+        # Load metadata with UnsafeLoader to handle numpy objects
+        with open(metadata_path, 'r') as f:
+            metadata = yaml.load(f, Loader=yaml.UnsafeLoader)
+        
+        # Convert numpy values to Python floats
+        def convert_to_float(obj):
+            if hasattr(obj, 'item'):  # numpy scalar
+                return float(obj.item())
+            elif isinstance(obj, (int, float)):
+                return float(obj)
+            return obj
+        
+        # Process metrics
+        training_metrics = {}
+        test_metrics = {}
+        if 'metrics' in metadata:
+            for key, value in metadata['metrics'].items():
+                converted_value = convert_to_float(value)
+                if key.startswith('train_'):
+                    training_metrics[key.replace('train_', '')] = converted_value
+                elif key.startswith('test_'):
+                    test_metrics[key.replace('test_', '')] = converted_value
+        
+        # Load feature importance if available
+        feature_importance = None
+        feature_importance_path = model_dir / "feature_importance.csv"
+        if feature_importance_path.exists():
+            importance_df = pd.read_csv(feature_importance_path)
+            feature_importance = importance_df.to_dict('records')
+        
+        return ModelMetrics(
+            model_version=metadata.get('model_version', version),
+            model_type=metadata.get('model_type', 'unknown'),
+            timestamp=metadata.get('timestamp', 'unknown'),
+            training_metrics=training_metrics,
+            test_metrics=test_metrics,
+            feature_importance=feature_importance
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error loading metrics: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
