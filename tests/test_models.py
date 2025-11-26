@@ -2,6 +2,7 @@
 Test suite for model training module.
 """
 
+import mlflow
 import numpy as np
 import pytest
 
@@ -23,6 +24,15 @@ def sample_training_data():
 def trainer():
     """Create ModelTrainer instance for testing."""
     return ModelTrainer(model_path="/tmp/test_models")
+
+
+@pytest.fixture(autouse=True)
+def cleanup_mlflow_runs():
+    """Cleanup MLflow runs after each test."""
+    yield
+    # End any active runs
+    if mlflow.active_run():
+        mlflow.end_run()
 
 
 def test_train_classifier(trainer, sample_training_data):

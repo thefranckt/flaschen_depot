@@ -148,8 +148,10 @@ class ModelTrainer:
         logger.info("\n" + classification_report(y_test, y_pred))
 
         # Log metrics to MLflow
-        with mlflow.start_run():
+        try:
             mlflow.log_metric("accuracy", accuracy)
+        except Exception as e:
+            logger.warning(f"Could not log metrics to MLflow: {e}")
 
         return {"accuracy": accuracy}
 
@@ -183,9 +185,11 @@ class ModelTrainer:
         logger.info(f"Regressor metrics: {metrics}")
 
         # Log metrics to MLflow
-        with mlflow.start_run():
+        try:
             for metric_name, metric_value in metrics.items():
                 mlflow.log_metric(metric_name, metric_value)
+        except Exception as e:
+            logger.warning(f"Could not log metrics to MLflow: {e}")
 
         return metrics
 

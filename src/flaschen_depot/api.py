@@ -3,6 +3,7 @@ FastAPI application for serving Flaschen Depot ML models.
 """
 
 import logging
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Dict, List
 
@@ -15,15 +16,40 @@ from pydantic import BaseModel, Field
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize FastAPI app
+# Model placeholder
+model = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup and shutdown."""
+    # Startup: Load the ML model
+    global model
+    model_path = Path("models/model.pkl")
+
+    if model_path.exists():
+        try:
+            model = joblib.load(model_path)
+            logger.info(f"Model loaded successfully from {model_path}")
+        except Exception as e:
+            logger.error(f"Error loading model: {e}")
+            model = None
+    else:
+        logger.warning(f"Model file not found at {model_path}")
+
+    yield
+
+    # Shutdown: Cleanup if needed
+    logger.info("Application shutting down")
+
+
+# Initialize FastAPI app with lifespan
 app = FastAPI(
     title="Flaschen Depot API",
     description="API for bottle depot prediction and management",
     version="0.1.0",
+    lifespan=lifespan,
 )
-
-# Model placeholder
-model = None
 
 
 class BottleData(BaseModel):
@@ -42,23 +68,6 @@ class PredictionResponse(BaseModel):
 
     prediction: float
     model_version: str = "0.1.0"
-
-
-@app.on_event("startup")
-async def load_model():
-    """Load the ML model on startup."""
-    global model
-    model_path = Path("models/model.pkl")
-
-    if model_path.exists():
-        try:
-            model = joblib.load(model_path)
-            logger.info(f"Model loaded successfully from {model_path}")
-        except Exception as e:
-            logger.error(f"Error loading model: {e}")
-            model = None
-    else:
-        logger.warning(f"Model file not found at {model_path}")
 
 
 @app.get("/")
