@@ -1,6 +1,6 @@
 """
-FastAPI Application for Service Time Prediction
-Provides REST API endpoints for batch predictions and model management.
+FastAPI Anwendung für Service-Zeit-Vorhersage
+Bietet REST API Endpunkte für Batch-Vorhersagen und Modellverwaltung.
 """
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
@@ -20,25 +20,25 @@ from src.data_loader import DataLoader
 from src.feature_engineering import FeatureEngineer
 from src.logger import FeatureLogger, PredictionLogger
 
-# Setup logging
+# Logging einrichten
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-# Load configuration
+# Konfiguration laden
 with open("config/config.yaml", 'r') as f:
     config = yaml.safe_load(f)
 
-# Initialize app
+# App initialisieren
 app = FastAPI(
-    title="Service Time Prediction API",
-    description="API for predicting delivery service times",
+    title="Service-Zeit-Vorhersage API",
+    description="API zur Vorhersage von Lieferzeiten",
     version="1.0.0"
 )
 
-# Add CORS middleware
+# CORS Middleware hinzufügen
 if config['api'].get('cors_enabled', True):
     app.add_middleware(
         CORSMiddleware,
@@ -48,30 +48,30 @@ if config['api'].get('cors_enabled', True):
         allow_headers=["*"],
     )
 
-# Initialize loggers
+# Logger initialisieren
 feature_logger = FeatureLogger(config['logging']['feature_log_db'])
 prediction_logger = PredictionLogger(config['logging']['prediction_log_db'])
 
-# Global variables for models and data
+# Globale Variablen für Modelle und Daten
 models = {}
 processed_data = None
 feature_engineer = None
 
 
 class PredictionRequest(BaseModel):
-    """Request model for single or batch predictions."""
-    driver_id: str = Field(..., description="Driver ID")
-    web_order_id: str = Field(..., description="Order ID from orders dataset")
+    """Anfrage-Modell für einzelne oder Batch-Vorhersagen."""
+    driver_id: str = Field(..., description="Fahrer-ID")
+    web_order_id: str = Field(..., description="Bestell-ID aus dem orders-Datensatz")
 
 
 class BatchPredictionRequest(BaseModel):
-    """Request model for batch predictions."""
-    requests: List[PredictionRequest] = Field(..., description="List of prediction requests")
-    model_version: Optional[str] = Field("latest", description="Model version to use")
+    """Anfrage-Modell für Batch-Vorhersagen."""
+    requests: List[PredictionRequest] = Field(..., description="Liste der Vorhersage-Anfragen")
+    model_version: Optional[str] = Field("latest", description="Zu verwendende Modellversion")
 
 
 class PredictionResponse(BaseModel):
-    """Response model for predictions."""
+    """Antwort-Modell für Vorhersagen."""
     driver_id: str
     web_order_id: str
     predicted_service_time: float
@@ -81,7 +81,7 @@ class PredictionResponse(BaseModel):
 
 
 class BatchPredictionResponse(BaseModel):
-    """Response model for batch predictions."""
+    """Antwort-Modell für Batch-Vorhersagen."""
     predictions: List[PredictionResponse]
     total_count: int
     request_id: str
@@ -89,14 +89,14 @@ class BatchPredictionResponse(BaseModel):
 
 
 class ModelInfo(BaseModel):
-    """Model information response."""
+    """Modellinformations-Antwort."""
     version: str
     path: str
     loaded: bool
 
 
 class HealthResponse(BaseModel):
-    """Health check response."""
+    """Gesundheitscheck-Antwort."""
     status: str
     timestamp: str
     models_loaded: int
@@ -104,7 +104,7 @@ class HealthResponse(BaseModel):
 
 
 class ModelMetrics(BaseModel):
-    """Model performance metrics response."""
+    """Modell-Performance-Metriken-Antwort."""
     model_version: str
     model_type: str
     timestamp: str
@@ -115,13 +115,13 @@ class ModelMetrics(BaseModel):
 
 def load_model(version: str = "latest"):
     """
-    Load model from disk.
+    Modell von der Festplatte laden.
     
     Args:
-        version: Model version to load
+        version: Modellversion zum Laden
         
     Returns:
-        Loaded model
+        Geladenes Modell
     """
     if version in models:
         return models[version]
@@ -144,7 +144,7 @@ def load_model(version: str = "latest"):
 
 
 def load_processed_data():
-    """Load processed data for feature lookup."""
+    """Verarbeitete Daten für Feature-Lookup laden."""
     global processed_data, feature_engineer
     
     if processed_data is not None:
@@ -172,27 +172,27 @@ def load_processed_data():
 
 def extract_features(web_order_id: str, driver_id: str) -> Dict:
     """
-    Extract features for prediction.
+    Features für Vorhersage extrahieren.
     
     Args:
-        web_order_id: Order identifier
-        driver_id: Driver identifier (can be arbitrary)
+        web_order_id: Bestell-Identifikator
+        driver_id: Fahrer-Identifikator (kann beliebig sein)
         
     Returns:
-        Dictionary of features
+        Dictionary mit Features
     """
     df = load_processed_data()
     
-    # Find order in processed data
+    # Bestellung in verarbeiteten Daten finden
     order_data = df[df['web_order_id'] == web_order_id]
     
     if len(order_data) == 0:
         raise ValueError(f"Order {web_order_id} not found in dataset")
     
-    # Take first match (in case of duplicates)
+    # Ersten Treffer nehmen (falls Duplikate)
     order_data = order_data.iloc[0]
     
-    # Extract features
+    # Features extrahieren
     feature_cols = [
         'floor',
         'has_elevator',
@@ -224,37 +224,37 @@ def extract_features(web_order_id: str, driver_id: str) -> Dict:
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize on startup."""
-    logger.info("Starting Service Time Prediction API...")
+    """Bei Start initialisieren."""
+    logger.info("Service-Zeit-Vorhersage API wird gestartet...")
     
-    # Initialize loggers (ensure DB tables are created)
+    # Logger initialisieren (sicherstellen, dass DB-Tabellen erstellt werden)
     try:
         feature_logger._initialize_db()
         prediction_logger._initialize_db()
-        logger.info("✓ Database loggers initialized")
+        logger.info("✓ Datenbank-Logger initialisiert")
     except Exception as e:
-        logger.warning(f"Could not initialize loggers: {e}")
+        logger.warning(f"Logger konnten nicht initialisiert werden: {e}")
     
-    # Load default model
+    # Standard-Modell laden
     try:
         load_model("latest")
-        logger.info("✓ Latest model loaded")
+        logger.info("✓ Aktuelles Modell geladen")
     except Exception as e:
-        logger.warning(f"Could not load latest model: {e}")
+        logger.warning(f"Aktuelles Modell konnte nicht geladen werden: {e}")
     
-    # Load processed data
+    # Verarbeitete Daten laden
     try:
         load_processed_data()
-        logger.info("✓ Processed data loaded")
+        logger.info("✓ Verarbeitete Daten geladen")
     except Exception as e:
-        logger.warning(f"Could not load processed data: {e}")
+        logger.warning(f"Verarbeitete Daten konnten nicht geladen werden: {e}")
     
-    logger.info("✓ API ready")
+    logger.info("✓ API bereit")
 
 
 @app.get("/", response_model=HealthResponse)
 async def root():
-    """Health check endpoint."""
+    """Gesundheitscheck-Endpunkt."""
     return HealthResponse(
         status="healthy",
         timestamp=datetime.now().isoformat(),
@@ -265,7 +265,7 @@ async def root():
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
-    """Detailed health check."""
+    """Detaillierter Gesundheitscheck."""
     return HealthResponse(
         status="healthy",
         timestamp=datetime.now().isoformat(),
@@ -276,7 +276,7 @@ async def health_check():
 
 @app.get("/models", response_model=List[ModelInfo])
 async def list_models():
-    """List available models."""
+    """Verfügbare Modelle auflisten."""
     model_dir = Path(config['mlflow']['artifact_location'])
     model_files = list(model_dir.glob("model_*.joblib"))
     
@@ -297,14 +297,14 @@ async def list_models():
 @app.post("/predict", response_model=PredictionResponse)
 async def predict(request: PredictionRequest, model_version: str = "latest"):
     """
-    Single prediction endpoint.
+    Einzel-Vorhersage-Endpunkt.
     
     Args:
-        request: Prediction request with driver_id and web_order_id
-        model_version: Model version to use
+        request: Vorhersage-Anfrage mit driver_id und web_order_id
+        model_version: Zu verwendende Modellversion
         
     Returns:
-        Prediction response
+        Vorhersage-Antwort
     """
     try:
         # Load model
@@ -356,13 +356,13 @@ async def predict(request: PredictionRequest, model_version: str = "latest"):
 @app.post("/predict/batch", response_model=BatchPredictionResponse)
 async def predict_batch(batch_request: BatchPredictionRequest):
     """
-    Batch prediction endpoint.
+    Batch-Vorhersage-Endpunkt.
     
     Args:
-        batch_request: Batch of prediction requests
+        batch_request: Batch von Vorhersage-Anfragen
         
     Returns:
-        Batch prediction response
+        Batch-Vorhersage-Antwort
     """
     try:
         # Validate batch size
@@ -455,7 +455,7 @@ async def get_feature_logs(
     driver_id: Optional[str] = None,
     limit: int = 100
 ):
-    """Get logged features."""
+    """Geloggte Features abrufen."""
     try:
         logs = feature_logger.get_features(web_order_id, driver_id, limit)
         return logs.to_dict(orient='records')
@@ -469,7 +469,7 @@ async def get_prediction_logs(
     driver_id: Optional[str] = None,
     limit: int = 100
 ):
-    """Get logged predictions."""
+    """Geloggte Vorhersagen abrufen."""
     try:
         logs = prediction_logger.get_predictions(web_order_id, driver_id, limit)
         return logs.to_dict(orient='records')
@@ -479,7 +479,7 @@ async def get_prediction_logs(
 
 @app.get("/logs/statistics")
 async def get_prediction_statistics():
-    """Get prediction statistics."""
+    """Vorhersage-Statistiken abrufen."""
     try:
         stats = prediction_logger.get_statistics()
         return stats
@@ -490,13 +490,13 @@ async def get_prediction_statistics():
 @app.get("/metrics", response_model=ModelMetrics)
 async def get_model_metrics(version: str = "latest"):
     """
-    Get model performance metrics.
+    Modell-Performance-Metriken abrufen.
     
     Args:
-        version: Model version (default: latest)
+        version: Modellversion (Standard: latest)
     
     Returns:
-        Model metrics including training and test performance
+        Modell-Metriken inkl. Training- und Test-Performance
     """
     try:
         model_dir = Path(config['mlflow']['artifact_location'])

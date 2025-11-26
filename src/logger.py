@@ -1,6 +1,6 @@
 """
-Logging Module
-Handles feature and prediction logging to SQLite databases.
+Logging-Modul
+Behandelt Feature- und Vorhersage-Logging in SQLite-Datenbanken.
 """
 
 import sqlite3
@@ -15,14 +15,14 @@ logger = logging.getLogger(__name__)
 
 
 class FeatureLogger:
-    """Logs features used for predictions."""
+    """Loggt Features, die für Vorhersagen verwendet werden."""
     
     def __init__(self, db_path: str = "logs/feature_store.db"):
         """
-        Initialize FeatureLogger.
+        FeatureLogger initialisieren.
         
         Args:
-            db_path: Path to SQLite database file
+            db_path: Pfad zur SQLite-Datenbankdatei
         """
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
