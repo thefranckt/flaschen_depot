@@ -32,9 +32,9 @@ class DataLoader:
             floor, is_business, web_order_id, customer_id
         """
         filepath = self.data_dir / "orders.parquet"
-        logger.info(f"Loading orders from {filepath}")
+        logger.info("Loading orders from %s", filepath)
         df = pd.read_parquet(filepath)
-        logger.info(f"Loaded {len(df)} orders")
+        logger.info("Loaded %d orders", len(df))
         return df
     
     def load_articles(self) -> pd.DataFrame:
@@ -46,9 +46,9 @@ class DataLoader:
             article_weight_in_g, web_order_id
         """
         filepath = self.data_dir / "articles.parquet"
-        logger.info(f"Loading articles from {filepath}")
+        logger.info("Loading articles from %s", filepath)
         df = pd.read_parquet(filepath)
-        logger.info(f"Loaded {len(df)} articles")
+        logger.info("Loaded %d articles", len(df))
         return df
     
     def load_service_times(self) -> pd.DataFrame:
@@ -61,9 +61,9 @@ class DataLoader:
             trip_id, customer_id
         """
         filepath = self.data_dir / "service_times.parquet"
-        logger.info(f"Loading service times from {filepath}")
+        logger.info("Loading service times from %s", filepath)
         df = pd.read_parquet(filepath)
-        logger.info(f"Loaded {len(df)} service time records")
+        logger.info("Loaded %d service time records", len(df))
         return df
     
     def load_driver_mapping(self) -> pd.DataFrame:
@@ -74,9 +74,9 @@ class DataLoader:
             DataFrame mit Spalten: driver_id, web_order_id
         """
         filepath = self.data_dir / "driver_order_mapping.parquet"
-        logger.info(f"Loading driver mapping from {filepath}")
+        logger.info("Loading driver mapping from %s", filepath)
         df = pd.read_parquet(filepath)
-        logger.info(f"Loaded {len(df)} driver-order mappings")
+        logger.info("Loaded %d driver-order mappings", len(df))
         return df
     
     def load_all(self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -103,7 +103,7 @@ class DataLoader:
         """
         orders, articles, service_times, driver_mapping = self.load_all()
         
-        summary = {
+        data_summary = {
             "orders": {
                 "rows": len(orders),
                 "columns": list(orders.columns),
@@ -126,7 +126,7 @@ class DataLoader:
             }
         }
         
-        return summary
+        return data_summary
 
 
 if __name__ == "__main__":

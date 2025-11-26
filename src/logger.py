@@ -46,7 +46,7 @@ class FeatureLogger:
         
         conn.commit()
         conn.close()
-        logger.info(f"Feature logger initialized at {self.db_path}")
+        logger.info("Feature logger initialized at %s", self.db_path)
     
     def log_features(
         self,
@@ -111,7 +111,7 @@ class FeatureLogger:
         
         conn.commit()
         conn.close()
-        logger.info(f"Logged {len(data)} feature records")
+        logger.info("Logged %d feature records", len(data))
     
     def get_features(
         self,
@@ -184,7 +184,7 @@ class PredictionLogger:
         
         conn.commit()
         conn.close()
-        logger.info(f"Prediction logger initialized at {self.db_path}")
+        logger.info("Prediction logger initialized at %s", self.db_path)
     
     def log_prediction(
         self,
@@ -254,7 +254,7 @@ class PredictionLogger:
         
         conn.commit()
         conn.close()
-        logger.info(f"Logged {len(data)} prediction records")
+        logger.info("Logged %d prediction records", len(data))
     
     def get_predictions(
         self,
