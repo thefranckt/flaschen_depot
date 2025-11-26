@@ -163,15 +163,11 @@ async def predict_batch(bottles: List[BottleData]) -> List[PredictionResponse]:
 
         logger.info(f"Batch prediction made for {len(bottles)} bottles")
 
-        return [
-            PredictionResponse(prediction=float(pred)) for pred in predictions
-        ]
+        return [PredictionResponse(prediction=float(pred)) for pred in predictions]
 
     except Exception as e:
         logger.error(f"Batch prediction error: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Batch prediction failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Batch prediction failed: {str(e)}")
 
 
 if __name__ == "__main__":

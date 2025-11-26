@@ -68,14 +68,10 @@ class DataIngestion:
         # Generate sample data for bottle depot
         data = {
             "bottle_id": range(1, n_samples + 1),
-            "bottle_type": np.random.choice(
-                ["PET", "Glass", "Aluminum"], n_samples
-            ),
+            "bottle_type": np.random.choice(["PET", "Glass", "Aluminum"], n_samples),
             "volume_ml": np.random.choice([330, 500, 750, 1000], n_samples),
             "deposit_amount": np.random.uniform(0.08, 0.25, n_samples).round(2),
-            "condition": np.random.choice(
-                ["excellent", "good", "fair", "poor"], n_samples
-            ),
+            "condition": np.random.choice(["excellent", "good", "fair", "poor"], n_samples),
             "return_count": np.random.randint(0, 50, n_samples),
             "last_return_days": np.random.randint(1, 365, n_samples),
         }

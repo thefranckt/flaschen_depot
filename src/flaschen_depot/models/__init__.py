@@ -127,9 +127,7 @@ class ModelTrainer:
 
         return self.model
 
-    def evaluate_classifier(
-        self, X_test: np.ndarray, y_test: np.ndarray
-    ) -> Dict[str, float]:
+    def evaluate_classifier(self, X_test: np.ndarray, y_test: np.ndarray) -> Dict[str, float]:
         """
         Evaluate classifier performance.
 
@@ -155,9 +153,7 @@ class ModelTrainer:
 
         return {"accuracy": accuracy}
 
-    def evaluate_regressor(
-        self, X_test: np.ndarray, y_test: np.ndarray
-    ) -> Dict[str, float]:
+    def evaluate_regressor(self, X_test: np.ndarray, y_test: np.ndarray) -> Dict[str, float]:
         """
         Evaluate regressor performance.
 

@@ -138,8 +138,6 @@ class DataPreprocessor:
             X, y, test_size=test_size, random_state=random_state
         )
 
-        logger.info(
-            f"Split completed - Train: {len(X_train)}, Test: {len(X_test)}"
-        )
+        logger.info(f"Split completed - Train: {len(X_train)}, Test: {len(X_test)}")
 
         return X_train, X_test, y_train, y_test
