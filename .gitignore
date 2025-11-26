@@ -36,6 +36,9 @@ ENV/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+notebooks/*.png
+notebooks/*.jpg
+notebooks/*.svg
 
 # Environment variables
 .env
