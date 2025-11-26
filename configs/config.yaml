@@ -1,0 +1,57 @@
+# Model Configuration
+model:
+  name: "flaschen_depot_model"
+  type: "classifier"  # or "regressor"
+  version: "0.1.0"
+
+# Model Hyperparameters
+hyperparameters:
+  n_estimators: 100
+  max_depth: 10
+  min_samples_split: 2
+  min_samples_leaf: 1
+  random_state: 42
+
+# Data Configuration
+data:
+  raw_path: "data/raw"
+  processed_path: "data/processed"
+  train_test_split: 0.2
+  random_state: 42
+
+# Feature Configuration
+features:
+  categorical:
+    - "bottle_type"
+    - "condition"
+  numerical:
+    - "volume_ml"
+    - "deposit_amount"
+    - "return_count"
+    - "last_return_days"
+  target: "condition"  # or any other target variable
+
+# MLflow Configuration
+mlflow:
+  experiment_name: "flaschen_depot"
+  tracking_uri: "mlruns"
+  artifact_location: "mlartifacts"
+
+# Training Configuration
+training:
+  epochs: 100
+  batch_size: 32
+  validation_split: 0.2
+  early_stopping: true
+  patience: 10
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  log_file: "logs/flaschen_depot.log"
+
+# API Configuration
+api:
+  host: "0.0.0.0"
+  port: 8000
+  reload: true
