@@ -1,0 +1,52 @@
+feature_names:
+- floor
+- has_elevator
+- is_business
+- order_hour
+- order_day_of_week
+- order_month
+- is_weekend
+- total_boxes
+- total_articles
+- total_weight_g
+- avg_article_weight_g
+- max_article_weight_g
+- min_article_weight_g
+- weight_per_box
+- floor_elevator_interaction
+- business_floor_interaction
+metrics:
+  test_mae: 2.6877362827859246
+  test_r2: 0.3075397317498183
+  test_rmse: !!python/object/apply:numpy._core.multiarray.scalar
+  - &id001 !!python/object/apply:numpy.dtype
+    args:
+    - f8
+    - false
+    - true
+    state: !!python/tuple
+    - 3
+    - <
+    - null
+    - null
+    - null
+    - -1
+    - -1
+    - 0
+  - !!binary |
+    f+7fU2wPDEA=
+  train_mae: 2.20765475299138
+  train_r2: 0.5276291568223161
+  train_rmse: !!python/object/apply:numpy._core.multiarray.scalar
+  - *id001
+  - !!binary |
+    wNxsCvQkB0A=
+  val_mae: 2.683871283156978
+  val_r2: 0.3016436788563637
+  val_rmse: !!python/object/apply:numpy._core.multiarray.scalar
+  - *id001
+  - !!binary |
+    rcZpYF4HDEA=
+model_path: models\model_random_forest_20251126_082809.joblib
+model_type: random_forest
+timestamp: '20251126_082809'

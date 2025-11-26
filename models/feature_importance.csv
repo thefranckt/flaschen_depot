@@ -1,0 +1,17 @@
+feature,importance
+floor,586
+total_weight_g,514
+total_boxes,396
+total_articles,320
+min_article_weight_g,201
+has_elevator,193
+floor_elevator_interaction,162
+max_article_weight_g,160
+avg_article_weight_g,138
+order_hour,110
+is_business,73
+weight_per_box,59
+business_floor_interaction,49
+order_day_of_week,29
+order_month,9
+is_weekend,1

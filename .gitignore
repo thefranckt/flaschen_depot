@@ -36,6 +36,9 @@ ENV/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+notebooks/*.png
+notebooks/*.jpg
+notebooks/*.svg
 
 # Environment variables
 .env
@@ -56,6 +59,12 @@ models/mlruns/
 logs/*.log
 logs/*.db
 logs/*.db-journal
+
+# Plots (keep directory structure, ignore generated plots)
+plots/*.png
+plots/*.jpg
+plots/*.svg
+plots/*.pdf
 
 # OS
 .DS_Store
